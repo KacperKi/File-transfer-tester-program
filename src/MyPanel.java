@@ -1,5 +1,8 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import javax.swing.*;
 import javax.swing.event.*;
@@ -7,6 +10,7 @@ import javax.swing.event.*;
 import static java.lang.Thread.sleep;
 
 public class MyPanel extends JPanel {
+    private static JFrame frame;
     private JLabel jcomp1,jcomp4,jcomp10,pathToTest, jcomp15;
     private JCheckBox multipleThreadsEnable, fileSizeEnable,accept;
     private JTextField numberOfThreads;
@@ -15,6 +19,8 @@ public class MyPanel extends JPanel {
     private JTextField numberOfThreadInformation, lopgInfoArea, selectedPathToTestingFolder, selectedPathForResult;
     private int threadsNumber = 1;
     private int activeThreads = 0;
+    private int closed = 1;
+
 
     public MyPanel() {
         createPanel();
@@ -22,7 +28,6 @@ public class MyPanel extends JPanel {
         startTestButton.setEnabled(false);
         fileSizeSelect.setValue(1);
         createListener();
-
 
 
     }
@@ -145,13 +150,86 @@ public class MyPanel extends JPanel {
             lopgInfoArea.setText("New size of file: " + fileSizeSelect.getValue() + " MB");
             fileSizeSelect.setToolTipText (fileSizeSelect.getValue() + " MB");
         });
+        selectTestingButton.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            int option = fileChooser.showOpenDialog(frame);
+            if(option == JFileChooser.APPROVE_OPTION){
+                selectedPathToTestingFolder.setText(fileChooser.getSelectedFile().getPath());
+            }
+        });
+        selectFolderForResult.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+            int option = fileChooser.showOpenDialog(frame);
+            if(option == JFileChooser.APPROVE_OPTION){
+                selectedPathForResult.setText(fileChooser.getSelectedFile().getPath());
+            }else{
+                fileChooser.setSelectedFile(new File("C:\\Users"));
+                selectedPathForResult.setText("C:\\Users");
+            }
+        });
 
         startTestButton.addActionListener(e -> {
-            runThreads();
+            testAllElements();
+            while(closed == 1){
+                //DO NTH
+                System.out.println(closed);
+                try{
+                    sleep(500);
+                }catch(Exception we){
+
+                }
+            }
+            
+            if(closed == 0){
+                runThreads();
+            }
+
+
         });
 
     }
 
+
+
+
+    boolean testAllElements(){
+        Path pathTesting = Path.of(selectedPathToTestingFolder.getText());
+        Path pathResult = Path.of(selectedPathForResult.getText());
+
+        if(Files.exists(pathTesting) && Files.exists(pathResult)) {
+
+            closed = JOptionPane.showOptionDialog(frame,
+                    "All selected path are correct!\n" +
+                            "Program will start when this icon will be closed",
+                    "Test information",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE,
+                    null,
+                    null,
+                    null
+            );
+            System.out.println("W" + closed);
+            return true;
+        }
+        else {
+            closed = JOptionPane.showOptionDialog(frame,
+                    "We have problem with PATHs. Select new!",
+                    "Error 404r",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.ERROR_MESSAGE,
+                    null,
+                    null,
+                    null
+            );
+            return false;
+        }
+
+
+
+    }
 
     void runThreads(){
         ArrayList<Runnable> listOfTh = new ArrayList<>();
@@ -179,7 +257,7 @@ public class MyPanel extends JPanel {
 
 
     public static void main (String[] args) {
-        JFrame frame = new JFrame ("Fail Transfer Tester v1.0");
+        frame = new JFrame ("Fail Transfer Tester v1.0");
         frame.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().add (new MyPanel());
         frame.pack();
