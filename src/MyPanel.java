@@ -106,7 +106,7 @@ public class MyPanel extends JPanel {
         pathToTest.setBounds (5, 165, 130, 25);
         jcomp10.setBounds (10, 330, 45, 25);
         lopgInfoArea.setBounds (55, 330, 230, 25);
-        accept.setBounds (295, 315, 20, 25);
+        accept.setBounds (295, 300, 20, 25);
         selectTestingButton.setBounds (5, 195, 100, 25);
         selectedPathToTestingFolder.setBounds (110, 195, 210, 25);
         jcomp15.setBounds (5, 225, 185, 20);
@@ -116,12 +116,16 @@ public class MyPanel extends JPanel {
     void createListener(){
         multipleThreadsEnable.addItemListener(e -> {
             numberOfThreads.setEnabled(e.getStateChange() == ItemEvent.SELECTED);
+            if(e.getStateChange() == ItemEvent.DESELECTED) threadsNumber = 1;
         });
         fileSizeEnable.addItemListener(e -> {
             fileSizeSelect.setEnabled(e.getStateChange() == ItemEvent.SELECTED);
         });
         accept.addItemListener(e -> {
             startTestButton.setEnabled(e.getStateChange() == ItemEvent.SELECTED);
+            if(e.getStateChange() == ItemEvent.SELECTED){
+                if(selectedPathForResult.getText().equals("") || selectedPathToTestingFolder.getText().equals("")) accept.setSelected(false);
+            }
         });
         numberOfThreads.addKeyListener(new KeyListener() {
             @Override
@@ -182,7 +186,7 @@ public class MyPanel extends JPanel {
 
                 }
             }
-            
+
             if(closed == 0){
                 runThreads();
             }
@@ -198,8 +202,7 @@ public class MyPanel extends JPanel {
     boolean testAllElements(){
         Path pathTesting = Path.of(selectedPathToTestingFolder.getText());
         Path pathResult = Path.of(selectedPathForResult.getText());
-
-        if(Files.exists(pathTesting) && Files.exists(pathResult)) {
+        if(Files.exists(pathTesting) && Files.exists(pathResult) && !selectedPathToTestingFolder.getText().equals("") && !selectedPathForResult.getText().equals("")) {
 
             closed = JOptionPane.showOptionDialog(frame,
                     "All selected path are correct!\n" +
@@ -215,6 +218,7 @@ public class MyPanel extends JPanel {
             return true;
         }
         else {
+            accept.setSelected(false);
             closed = JOptionPane.showOptionDialog(frame,
                     "We have problem with PATHs. Select new!",
                     "Error 404r",
@@ -226,9 +230,6 @@ public class MyPanel extends JPanel {
             );
             return false;
         }
-
-
-
     }
 
     void runThreads(){
