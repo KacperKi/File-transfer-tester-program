@@ -15,13 +15,14 @@ public class MyPanel extends JPanel {
     private static JFrame frame;
     Thread threadsObserver;
     String pathToFile; boolean fileExistStop = false;
-    private JLabel jcomp1,jcomp4,jcomp10,pathToTest, jcomp15;
+    private JLabel jcomp1,jcomp4,jcomp10,pathToTest, jcomp15, infoFileStarter;
     private JCheckBox multipleThreadsEnable, fileSizeEnable,accept, repeatsEnable;
     private JTextField numberOfThreads, numberOfRepeat;
     private JSlider fileSizeSelect;
-    private JButton startTestButton, selectTestingButton, selectFolderForResult;
-    private JTextField numberOfThreadInformation, lopgInfoArea, selectedPathToTestingFolder, selectedPathForResult;
-    private int threadsNumber = 1;
+    private JButton startTestButton, selectTestingButton, selectFolderForResult, selectPathToFile;
+    private JTextField numberOfThreadInformation, lopgInfoArea, selectedPathToTestingFolder, selectedPathForResult,
+                        selectedPathToCreateFile;
+    private int threadsNumber = 1, accurancy = 10;
     private int activeThreads = 0;
     private int closed = 1;
     float resultPercent = (float) 0.0;
@@ -44,6 +45,7 @@ public class MyPanel extends JPanel {
 
         numberOfThreads = new JTextField (5);
         numberOfRepeat = new JTextField(5);
+        infoFileStarter = new JLabel("Specify path for temp files");
         jcomp4 = new JLabel ("Nr Threads");
         fileSizeEnable = new JCheckBox ("Specify size of file");
         fileSizeSelect = new JSlider (0, 50);
@@ -58,6 +60,8 @@ public class MyPanel extends JPanel {
         jcomp15 = new JLabel ("Specify folder to store data");
         selectFolderForResult = new JButton ("Select");
         selectedPathForResult = new JTextField (5);
+        selectPathToFile = new JButton("Select");
+        selectedPathToCreateFile = new JTextField(5);
 
         //set components properties
         numberOfThreads.setEnabled (false);
@@ -72,6 +76,7 @@ public class MyPanel extends JPanel {
         fileSizeSelect.setEnabled (false);
         fileSizeSelect.setToolTipText ("1 MB");
         startTestButton.setToolTipText ("Press Button to Start Test!");
+        selectedPathToCreateFile.setToolTipText("PATH for temporary file for testing");
         numberOfThreadInformation.setEnabled (false);
         numberOfThreadInformation.setToolTipText ("This field show number of threads.");
         lopgInfoArea.setEnabled (false);
@@ -83,7 +88,7 @@ public class MyPanel extends JPanel {
 
 
         //adjust size and set layout
-        setPreferredSize (new Dimension (320, 370));
+        setPreferredSize (new Dimension (320, 420));
         setLayout (null);
 
         //add components
@@ -106,6 +111,9 @@ public class MyPanel extends JPanel {
         add (selectedPathForResult);
         add (repeatsEnable);
         add (numberOfRepeat);
+        add(infoFileStarter);
+        add(selectPathToFile);
+        add(selectedPathToCreateFile);
 
         //set component bounds (only needed by Absolute Positioning)
         jcomp1.setBounds (5, 5, 320, 20);
@@ -114,19 +122,29 @@ public class MyPanel extends JPanel {
         numberOfThreads.setBounds (85, 60, 100, 25);
         numberOfRepeat.setBounds(185,60,100,25);
         jcomp4.setBounds (5, 60, 100, 25);
+
         fileSizeEnable.setBounds (0, 90, 150, 20);
         fileSizeSelect.setBounds (5, 110, 315, 60);
-        startTestButton.setBounds (5, 300, 100, 25);
-        numberOfThreadInformation.setBounds (120, 300, 165, 25);
-        pathToTest.setBounds (5, 165, 130, 25);
-        jcomp10.setBounds (10, 330, 45, 25);
-        lopgInfoArea.setBounds (55, 330, 230, 25);
-        accept.setBounds (295, 300, 20, 25);
-        selectTestingButton.setBounds (5, 195, 100, 25);
-        selectedPathToTestingFolder.setBounds (110, 195, 210, 25);
+        pathToTest.setBounds (5, 170, 130, 25);
+
         jcomp15.setBounds (5, 225, 185, 20);
         selectFolderForResult.setBounds (5, 245, 100, 25);
         selectedPathForResult.setBounds (110, 245, 210, 25);
+
+        infoFileStarter.setBounds (5, 280, 185, 20);
+        selectPathToFile.setBounds (5, 300, 100, 25);
+        selectedPathToCreateFile.setBounds (110, 300, 210, 25);
+
+        jcomp10.setBounds (10, 370, 45, 25);
+        lopgInfoArea.setBounds (55, 370, 230, 25);
+                accept.setBounds (295, 340, 20, 25);
+        startTestButton.setBounds (5, 340, 100, 25);
+        numberOfThreadInformation.setBounds (120, 340, 165, 25);
+
+        selectTestingButton.setBounds (5, 195, 100, 25);
+        selectedPathToTestingFolder.setBounds (110, 195, 210, 25);
+
+
     }
     void createListener(){
         multipleThreadsEnable.addItemListener(e -> {
@@ -139,7 +157,7 @@ public class MyPanel extends JPanel {
         accept.addItemListener(e -> {
             startTestButton.setEnabled(e.getStateChange() == ItemEvent.SELECTED);
             if(e.getStateChange() == ItemEvent.SELECTED){
-                if(selectedPathForResult.getText().equals("") || selectedPathToTestingFolder.getText().equals("")) accept.setSelected(false);
+                if(selectedPathToCreateFile.getText().equals("") || selectedPathForResult.getText().equals("") || selectedPathToTestingFolder.getText().equals("")) accept.setSelected(false);
             }
         });
         numberOfThreads.addKeyListener(new KeyListener() {
@@ -207,6 +225,30 @@ public class MyPanel extends JPanel {
             numberOfRepeat.setEnabled(e.getStateChange() == ItemEvent.SELECTED);
             if(e.getStateChange() == ItemEvent.DESELECTED) numberOfRepeat.setText("10");
         });
+        numberOfRepeat.addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+
+            }
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if(e.getKeyChar() >= '0' && e.getKeyChar() <= '9' && Integer.valueOf(numberOfRepeat.getText()) <= 1001
+                        && Integer.valueOf(numberOfRepeat.getText()) > 0){
+                    lopgInfoArea.setText("New n - number: " + numberOfRepeat.getText());
+                    accurancy =Integer.valueOf(numberOfRepeat.getText());
+                }
+                else {
+                    numberOfRepeat.setText("10");
+                    accurancy = 10;
+                }
+            }
+        });
         numberOfRepeat.addFocusListener(new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
@@ -215,7 +257,27 @@ public class MyPanel extends JPanel {
 
             @Override
             public void focusLost(FocusEvent e) {
-                if(Integer.parseInt(numberOfRepeat.getText() )> 0 && Integer.parseInt(numberOfRepeat.getText()) < 10001 )numberOfRepeat.setText("10");
+                int value = Integer.valueOf(numberOfRepeat.getText());
+                if(value > 0 && value < 1001){
+                    accurancy = value;
+                } else {
+                    numberOfRepeat.setText("10");
+                    accurancy = 10;
+                }
+
+            }
+        });
+        selectPathToFile.addActionListener(e -> {
+                System.out.println("WDWDWD");
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+            int option = fileChooser.showOpenDialog(frame);
+            if(option == JFileChooser.APPROVE_OPTION){
+                selectedPathToCreateFile.setText(fileChooser.getSelectedFile().getPath());
+            }else{
+                fileChooser.setSelectedFile(new File("C:\\Users"));
+                selectedPathToCreateFile.setText("C:\\Users");
             }
         });
 
@@ -283,7 +345,9 @@ public class MyPanel extends JPanel {
     boolean testAllElements(){
         Path pathTesting = Path.of(selectedPathToTestingFolder.getText());
         Path pathResult = Path.of(selectedPathForResult.getText());
-        if(Files.exists(pathTesting) && Files.exists(pathResult) && !selectedPathToTestingFolder.getText().equals("") && !selectedPathForResult.getText().equals("")) {
+        Path pathCreate = Path.of(selectedPathToCreateFile.getText());
+        if(Files.exists(pathTesting) && Files.exists(pathResult) && Files.exists(pathCreate)
+                && !selectedPathToCreateFile.getText().equals("") && !selectedPathToTestingFolder.getText().equals("") && !selectedPathForResult.getText().equals("")) {
 
             closed = JOptionPane.showOptionDialog(frame,
                     "All selected path are correct!\n" +
@@ -335,45 +399,57 @@ public class MyPanel extends JPanel {
 
 
     void generateRandomFile(){
-        String fileName = "\\test.txt";
-        pathToFile = selectedPathToTestingFolder.getText() + fileName;
-        boolean dialogShow = false;
+        for(int sufix = 1; sufix <= threadsNumber; sufix++) {
+            String fileName = "\\test" + sufix + ".txt";
+            pathToFile = selectedPathToCreateFile.getText() + fileName;
+            boolean dialogShow = false;
 
-        if(Files.exists(Path.of(pathToFile))) {
-            dialogShow = true;
-            int result = JOptionPane.showConfirmDialog(frame,"Sure? You want to overide file?", "Warning! File exists!",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE);
+            if (Files.exists(Path.of(pathToFile))) {
+                dialogShow = true;
+                int result = JOptionPane.showConfirmDialog(frame, "You want to overide file? Sure?", "Warning! File exists!",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE);
 
-            if(result == JOptionPane.YES_OPTION){
-                File file = new File(pathToFile);
-                file.delete();
+                if (result == JOptionPane.YES_OPTION) {
+                    File file = new File(pathToFile);
+                    file.delete();
 
-                while(Files.exists(Path.of(pathToFile))){} //wait for remove file
-                fileExistStop = false;
+                    while (Files.exists(Path.of(pathToFile))) {
+                    } //wait for remove file
+                    fileExistStop = false;
 
-            }else if (result == JOptionPane.NO_OPTION){
-                fileExistStop = true;
-            }else {
-                fileExistStop = true;
+                } else if (result == JOptionPane.NO_OPTION) {
+                    fileExistStop = true;
+                } else {
+                    fileExistStop = true;
+                }
+                dialogShow = false;
             }
-            dialogShow = false;
-        }
 
-        while(dialogShow){}
+            while (dialogShow) {
+            }
 
-        if(!fileExistStop) {
-            File file = new File(pathToFile);
-            RandomAccessFile randomAccessFile;
-            try {
-                randomAccessFile = new RandomAccessFile(file, "rw");
-                randomAccessFile.setLength(ConertMbToBytes(fileSizeSelect.getValue()));
-                randomAccessFile.close();
-            } catch (Exception e) {}
+            if (!fileExistStop) {
+                File file = new File(pathToFile);
+                RandomAccessFile randomAccessFile;
+                try {
+                    randomAccessFile = new RandomAccessFile(file, "rw");
+                    randomAccessFile.setLength(ConertMbToBytes(fileSizeSelect.getValue()));
+                    randomAccessFile.close();
+                } catch (Exception e) {
+                }
+            }
+            while (!Files.exists(Path.of(pathToFile)) && !fileExistStop) {
+            }
         }
-        while(!Files.exists(Path.of(pathToFile)) && !fileExistStop){}
 
     }
+
+    void clearAllFiles(){
+
+    }
+
+
     int ConertMbToBytes(int numberMb){
         return numberMb * 1048576;
 
