@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.event.*;
@@ -26,7 +29,7 @@ public class MyPanel extends JPanel {
     private int activeThreads = 0;
     private int closed = 1;
     float resultPercent = (float) 0.0;
-    boolean testWasFinished = false;
+    boolean testWasFinished = false, generateFileFlag = false, startedCreating = false, threadWasCreated = false;
 
     public MyPanel() {
         createPanel();
@@ -268,7 +271,6 @@ public class MyPanel extends JPanel {
             }
         });
         selectPathToFile.addActionListener(e -> {
-                System.out.println("WDWDWD");
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
@@ -305,6 +307,7 @@ public class MyPanel extends JPanel {
                     observeThreadsNumber();
                     runInfoStatusMonitor();
                     runThreads();
+                    clearAllFiles();
                 }
             }
         });
@@ -399,6 +402,7 @@ public class MyPanel extends JPanel {
 
 
     void generateRandomFile(){
+        generateFileFlag = true;
         for(int sufix = 1; sufix <= threadsNumber; sufix++) {
             String fileName = "\\test" + sufix + ".txt";
             pathToFile = selectedPathToCreateFile.getText() + fileName;
@@ -438,49 +442,112 @@ public class MyPanel extends JPanel {
                     randomAccessFile.close();
                 } catch (Exception e) {
                 }
+
+//                Instant dat1 = Instant.now();
+//                String nano = String.valueOf(dat1.getNano());
+                String timeBase = String.valueOf( new Timestamp(System.currentTimeMillis()));
+
+//                String fullDate = timeBase + "." + nano;
+
+                System.out.println("File " + sufix + " was created at: " + timeBase);
+
             }
             while (!Files.exists(Path.of(pathToFile)) && !fileExistStop) {
             }
         }
-
+        generateFileFlag = false;
     }
 
     void clearAllFiles(){
+        int thNum = Integer.parseInt(numberOfThreads.getText());
 
+        Thread th = new Thread("Files cleaner") {
+            public void run(){
+                while(!testWasFinished && !threadWasCreated){try{sleep(1000);}catch(Exception e){};}
+                for(int sufix = 1; sufix <= thNum; sufix++) {
+                    String fileName = "\\test" + sufix + ".txt";
+                    pathToFile = selectedPathToCreateFile.getText() + fileName;
+                    File file = new File(pathToFile);
+                    file.delete();
+                }
+            }
+        };
+        th.start();
     }
-
 
     int ConertMbToBytes(int numberMb){
         return numberMb * 1048576;
-
     }
 
     void runThreads(){
+        startedCreating = true;
         ArrayList<Runnable> listOfTh = new ArrayList<>();
-        for(int i = 0; i < threadsNumber; i++) {
+
+        while(generateFileFlag){}
+
+        for(int i = 1; i <= threadsNumber; i++) {
 
             int finalI = i;
             Thread thread = new Thread("New Thread no. " + finalI) {
-                public void run(){
+                public void run() {
+                    threadWasCreated = false;
                     activeThreads++;
                     numberOfThreadInformation.setText("Active " + activeThreads + "/" + threadsNumber);
 
-                    try{sleep(1000 + 100 * finalI);}catch (Exception e){}
+                    String fileName = "\\test" + finalI + ".txt";
 
+                    Path sourcePath = Path.of(selectedPathToCreateFile.getText() + fileName);
+                    Path destinationPath = Path.of(selectedPathToTestingFolder.getText() + fileName);
+
+                    long timeElapsedUP, timeElapsedDW;
+
+                    try {
+                        for (int resoInt = 1; resoInt <= Integer.parseInt(numberOfRepeat.getText()); resoInt++) {
+                            sleep(4000);
+
+                            System.out.println("Starting upload");
+                            long startUP = System.nanoTime();
+                            Path temp = Files.move(sourcePath, destinationPath);
+
+                            long megabytes = ((Files.size(destinationPath) / 1024) / 1024);
+                            System.out.println("Size of mv file: " + megabytes);
+
+
+                            long finishUP = System.nanoTime();
+                            timeElapsedUP = finishUP - startUP;
+                            double elapsedTimeInSecondUP = (double) timeElapsedUP / 1_000_000_000;
+
+
+                            sleep(4000);
+                            System.out.println("Starting download");
+                            long startDW = System.nanoTime();
+                            Path temp1 = Files.move(destinationPath, sourcePath);
+                            long finishDW = System.nanoTime();
+                            timeElapsedDW = finishDW - startDW;
+                            double elapsedTimeInSecondDW = (double) timeElapsedDW / 1_000_000_000;
+
+
+                            sleep(4000);
+
+
+
+
+                            System.out.println("File " + finalI  + " resoultion nr. " + resoInt + " - Upload file time: " + elapsedTimeInSecondUP + " - Download file time: " + elapsedTimeInSecondDW);
+                        }
+                    } catch (Exception e) {}
+
+                    if(activeThreads==1) {setResultPercent(100F);testWasFinished=true;}
                     activeThreads--;
                     numberOfThreadInformation.setText("Active " + activeThreads + "/" + threadsNumber);
-
-
-
-                    if(activeThreads == 1) {
-                        testWasFinished = true;
-                    }
                 }
             };
             listOfTh.add(thread);
             thread.start();
+            threadWasCreated = true;
         }
+        startedCreating = false;
     }
+
 
     public static void main (String[] args) {
         frame = new JFrame ("Fail Transfer Tester v1.0");
