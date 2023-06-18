@@ -15,8 +15,10 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.event.*;
 import java.io.FileWriter;
+import java.util.Locale;
 
 import static java.lang.Thread.sleep;
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class MyPanel extends JPanel {
     private static JFrame frame;
@@ -34,7 +36,7 @@ public class MyPanel extends JPanel {
     private int closed = 1;
     float resultPercent = (float) 0.0;
     boolean testWasFinished = false, generateFileFlag = false, startedCreating = false, threadWasCreated = false;
-
+    ArrayList<ArrayList<String>> dataToAVG = new ArrayList<>();
     String startTestDate, endTestDate;
 
     public MyPanel() {
@@ -468,7 +470,8 @@ public class MyPanel extends JPanel {
 
         Thread th = new Thread("Files cleaner") {
             public void run(){
-                while(!testWasFinished && !threadWasCreated){try{sleep(1000);}catch(Exception e){};}
+                while(!testWasFinished && !threadWasCreated){try{sleep(1000);}catch(Exception e){}
+                }
                 for(int sufix = 1; sufix <= thNum; sufix++) {
                     String fileName = "\\test" + sufix + ".txt";
                     pathToFile = selectedPathToCreateFile.getText() + fileName;
@@ -499,8 +502,10 @@ public class MyPanel extends JPanel {
             Thread thread = new Thread("New Thread no. " + finalI) {
                 public void run() {
 
-                    float timesUP[] = new float[Integer.parseInt(numberOfRepeat.getText())-1] ;
-                    float timesDW[] = new float[Integer.parseInt(numberOfRepeat.getText())-1] ;
+                    ArrayList<String> rowData = new ArrayList<>();
+
+                    float[] timesUP = new float[Integer.parseInt(numberOfRepeat.getText())-1] ;
+                    float[] timesDW = new float[Integer.parseInt(numberOfRepeat.getText())-1] ;
 
                     threadWasCreated = false;
                     activeThreads++;
@@ -516,11 +521,11 @@ public class MyPanel extends JPanel {
                     try {
                         for (int resoInt = 1; resoInt <= Integer.parseInt(numberOfRepeat.getText()); resoInt++) {
 
+                            rowData.add(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime()));
+
                             long startUP = System.nanoTime();
                             Path temp = Files.move(sourcePath, destinationPath);
-
-                            long megabytes = ((Files.size(destinationPath) / 1024) / 1024);
-
+//                            long megabytes = ((Files.size(destinationPath) / 1024) / 1024);
                             long finishUP = System.nanoTime();
                             timeElapsedUP = finishUP - startUP;
                             double elapsedTimeInSecondUP = (double) timeElapsedUP / 1_000_000_000;
@@ -533,12 +538,14 @@ public class MyPanel extends JPanel {
 
                             timesUP[resoInt-1] = (float) elapsedTimeInSecondUP;
                             timesDW[resoInt-1] = (float) elapsedTimeInSecondDW;
-
-                            System.out.println("File " + finalI  + " resoultion nr. " + resoInt + " - Upload file time: " + elapsedTimeInSecondUP + " - Download file time: " + elapsedTimeInSecondDW);
                         }
                     } catch (Exception e) {}
 
-                    System.out.println("File " + finalI  + " - Upload file time: " + calcaulateAvg(timesUP) + " - Download file time: " + calcaulateAvg(timesDW));
+                    rowData.add(String.valueOf(threadsNumber));
+                    rowData.add(String.valueOf(startTestDate));
+                    rowData.add(String.valueOf(numberOfRepeat.getText()));
+                    rowData.add(String.valueOf(calcaulateAvg(timesUP)));
+                    rowData.add(String.valueOf(calcaulateAvg(timesDW)));
 
                     if(activeThreads==1) {setResultPercent(100F);testWasFinished=true;
                             endTestDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime());
@@ -557,43 +564,79 @@ public class MyPanel extends JPanel {
 
 
     void exportToCSV(){
-        System.out.println("Start date test " + startTestDate + " end date test " + endTestDate);
+        String dateStartToFileName = startTestDate;
+        String dateEndToFileName = endTestDate;
+        dateStartToFileName = dateStartToFileName.replace("-","");
+        dateStartToFileName = dateStartToFileName.replace(" ","_");
+        dateStartToFileName = dateStartToFileName.replace(":","");
 
-        String fileName = "\\AllResults_" + numberOfThreads + "_" + startTestDate;
-        String fileNameAvg = "\\AvgResults_" + numberOfThreads + "_" + startTestDate;
+        dateEndToFileName = dateEndToFileName.replace("-","");
+        dateEndToFileName = dateEndToFileName.replace(" ","_");
+        dateEndToFileName = dateEndToFileName.replace(":","");
+
+
+        String fileName = "\\AllResults_" + numberOfThreads.getText() + "_" + dateStartToFileName +".csv";
+        String fileNameAvg = "\\AvgResults_" + numberOfThreads.getText() + "_" + dateEndToFileName +".csv";
 
         String path = selectedPathForResult.getText();
 
         Path pathToAvg = Path.of(path + fileNameAvg);
         Path pathToAll = Path.of(path + fileName);
 
-        String headersAvg[] = {"DateMeasurement","ThreadNumber", "StartDate", "EndDate", "ThreadsNumber", "AverageTimeUP", "AverageTimeDW"};
-        String headersAll[] = {"DateMeasurement", "StartDate", "EndDate", "ThreadNumber"};
+        String[] headersAvg = {"DateMeasurement", "ThreadsNumber", "StartDateTest", "Resolution",  "AverageTimeUP", "AverageTimeDW"};
+        String[] headersAll = {"DateMeasurement","OperationsNumber", "StartDate", "EndDate", };
 
-        File csvFileAvg = new File(pathToAvg.toUri());
-        FileWriter fileWriterAvg = new FileWriter(csvFileAvg);
+        long diff;
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
+        try{diff = Math.abs(sdf.parse(endTestDate).getTime() - sdf.parse(startTestDate).getTime());}catch (Exception e){}
 
-        File csvFileAll = new File(pathToAll.toUri());
-        FileWriter fileWriterAll = new FileWriter(csvFileAll);
+        try {
+            File csvFileAvg = new File(pathToAvg.toUri());
+            FileWriter fileWriterAvg = new FileWriter(csvFileAvg);
 
+            File csvFileAll = new File(pathToAll.toUri());
+            FileWriter fileWriterAll = new FileWriter(csvFileAll);
 
-        //        for (String[] data : employees) {
-//            StringBuilder line = new StringBuilder();
-//            for (int i = 0; i < data.length; i++) {
-//                line.append(data[i]);
-//                if (i != data.length - 1) {
-//                    line.append(',');
-//                }
-//            }
-//            line.append("\n");
-//            fileWriter.write(line.toString());
-//        }
-//        fileWriter.close();
+            StringBuilder lineAll = new StringBuilder();
+            for(String t: headersAll){
+                lineAll.append(t);
+                if(headersAll[headersAll.length-1] != t) lineAll.append(',');
+                else lineAll.append("\n");
+            }
+            fileWriterAll.write(lineAll.toString());
 
+            lineAll = new StringBuilder();
+            lineAll.append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime()));lineAll.append(',');
+            lineAll.append(threadsNumber * 2 * Integer.parseInt(numberOfRepeat.getText()));lineAll.append(',');
+            lineAll.append(startTestDate);lineAll.append(',');
+            lineAll.append(endTestDate); lineAll.append("\n");
+            fileWriterAll.write(lineAll.toString());
+            fileWriterAll.close();
+
+            StringBuilder lineAvg = new StringBuilder();
+            for(String t: headersAvg){
+                lineAvg.append(t);
+                if(headersAvg[headersAvg.length-1] != t) lineAvg.append(',');
+                else lineAvg.append("\n");
+            }
+            fileWriterAvg.write(lineAvg.toString());
+
+            for(ArrayList<String> row : dataToAVG){
+                lineAvg = new StringBuilder();
+                for(String val : row){
+                    lineAvg.append(val);
+                    if(row.get(row.size()-1) != val) lineAvg.append(',');
+                    else lineAvg.append("\n");
+                }
+                fileWriterAvg.append(lineAvg);
+            }
+            fileWriterAvg.close();
+
+        }catch(Exception e){}
 
     }
 
-    float calcaulateAvg(float table[]){
+    float calcaulateAvg(float[] table){
         float sum = 0F;
         for(float tmp : table){
             sum+=tmp;
