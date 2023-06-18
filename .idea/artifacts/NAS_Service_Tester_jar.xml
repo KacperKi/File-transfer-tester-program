@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="NAS Service Tester:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/NAS_Service_Tester_jar</output-path>
+    <root id="archive" name="NAS Service Tester.jar">
+      <element id="module-output" name="NAS Service Tester" />
+    </root>
+  </artifact>
+</component>
