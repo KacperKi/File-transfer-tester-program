@@ -50,7 +50,7 @@ public class MyPanel extends JPanel {
     }
     void createPanel(){
         //construct components
-        jcomp1 = new JLabel ("NAS/FTP/Disc Tester - inż. K. Kisielewski - 2023, Lublin");
+        jcomp1 = new JLabel ("File Transfer Tester - inż. K. Kisielewski - 2023, Lublin");
         multipleThreadsEnable = new JCheckBox ("Multiple Threads");
         repeatsEnable = new JCheckBox ("n - repeate");
 
@@ -470,6 +470,7 @@ public class MyPanel extends JPanel {
         Thread th = new Thread("Files cleaner") {
             public void run(){
                 while(!testWasFinished && !threadWasCreated){
+                    System.out.println("Waiting loop - " + testWasFinished + " - " + threadWasCreated);
                     try{sleep(1000);}catch(Exception e){}
                 }
                 for(int sufix = 1; sufix <= thNum; sufix++) {
@@ -492,6 +493,8 @@ public class MyPanel extends JPanel {
         startedCreating = true;
         ArrayList<Runnable> listOfTh = new ArrayList<>();
 
+        dataToAVG = new ArrayList<>();
+
         while(generateFileFlag){}
 
         if(listOfTh.size()==0) { startTestDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime()); }
@@ -503,9 +506,10 @@ public class MyPanel extends JPanel {
 
                     ArrayList<String> rowData = new ArrayList<>();
 
-                    float[] timesUP = new float[Integer.parseInt(numberOfRepeat.getText())-1] ;
-                    float[] timesDW = new float[Integer.parseInt(numberOfRepeat.getText())-1] ;
+                    float[] timesUP = new float[Integer.parseInt(numberOfRepeat.getText())] ;
+                    float[] timesDW = new float[Integer.parseInt(numberOfRepeat.getText())] ;
 
+                    int incrementing = activeThreads;
                     threadWasCreated = false;
                     activeThreads++;
                     numberOfThreadInformation.setText("Active " + activeThreads + "/" + threadsNumber);
@@ -517,58 +521,78 @@ public class MyPanel extends JPanel {
 
                     long timeElapsedUP, timeElapsedDW;
                     double elapsedTimeInSecondUP=0F,elapsedTimeInSecondDW=0F;
+
                     try {
                         rowData.add(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime()));
+
                         for (int resoInt = 1; resoInt <= Integer.parseInt(numberOfRepeat.getText()); resoInt++) {
 
                             long startUP = System.nanoTime();
                             Path temp = Files.move(sourcePath, destinationPath);
-
                             long megabytes = ((Files.size(destinationPath) / 1024) / 1024);
                             while(megabytes != fileSizeSelect.getValue()) {}
-
                             long finishUP = System.nanoTime();
+
                             timeElapsedUP = finishUP - startUP;
-                             elapsedTimeInSecondUP = (double) timeElapsedUP / 1_000_000_000;
+                            elapsedTimeInSecondUP = (double) timeElapsedUP / 1_000_000_000;
 
                             long startDW = System.nanoTime();
                             Path temp1 = Files.move(destinationPath, sourcePath);
-                            long finishDW = System.nanoTime();
-
                             megabytes = ((Files.size(sourcePath) / 1024) / 1024);
                             while(megabytes != fileSizeSelect.getValue()) {}
-
+                            long finishDW = System.nanoTime();
 
                             timeElapsedDW = finishDW - startDW;
-                             elapsedTimeInSecondDW = (double) timeElapsedDW / 1_000_000_000;
+                            elapsedTimeInSecondDW = (double) timeElapsedDW / 1_000_000_000;
 
-                            timesUP[resoInt-1] = (float) elapsedTimeInSecondUP;
-                            timesDW[resoInt-1] = (float) elapsedTimeInSecondDW;
+                            if(Integer.valueOf(numberOfThreads.getText()) != 1 && Integer.parseInt(numberOfRepeat.getText()) != 1) {
+                                System.out.println("Control 1");
+
+                                timesUP[resoInt - 1] = (float) elapsedTimeInSecondUP;
+                                timesDW[resoInt - 1] = (float) elapsedTimeInSecondDW;
+                                System.out.println("Control 2");
+
+                            }
                         }
-                    } catch (Exception e) {}
 
 
                     rowData.add(String.valueOf(threadsNumber));
                     rowData.add(String.valueOf(startTestDate));
                     rowData.add(String.valueOf(numberOfRepeat.getText()));
+                        System.out.println("Control 3");
+
 
                     if(Integer.parseInt(numberOfRepeat.getText()) == 1){
                         rowData.add(String.valueOf(elapsedTimeInSecondUP));
                         rowData.add(String.valueOf(elapsedTimeInSecondDW));
+                        System.out.println("Added single row");
+
                     }else{
                         rowData.add(String.valueOf(calcaulateAvg(timesUP)));
                         rowData.add(String.valueOf(calcaulateAvg(timesDW)));
+                        System.out.println("Added avg row");
                     }
+
                     dataToAVG.add(rowData);
 
-                    if(activeThreads==1) {setResultPercent(100F);testWasFinished=true;
+                    System.out.println("Control 4");
+
+                    if(activeThreads==1 && incrementing != 0) {setResultPercent(100F);testWasFinished=true;
                             endTestDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime());
                     }
                     activeThreads--;
+                        System.out.println("Control 5");
+
                     numberOfThreadInformation.setText("Active " + activeThreads + "/" + threadsNumber);
+                        System.out.println("Control 6");
+
+                    } catch (Exception e) {System.out.println("HERE1 : " + e);}
+
+                    if(Integer.valueOf(numberOfThreads.getText()) == 1 ){
+                        endTestDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime());
+                        testWasFinished = true; threadWasCreated = true;}
                 }
             };
-
             listOfTh.add(thread);
             thread.start();
             threadWasCreated = true;
@@ -591,8 +615,8 @@ public class MyPanel extends JPanel {
                 dateEndToFileName = dateEndToFileName.replace(":", "");
 
 
-                String fileName = "\\AllResults_" + numberOfThreads.getText() + "_" + dateStartToFileName + ".csv";
-                String fileNameAvg = "\\AvgResults_" + numberOfThreads.getText() + "_" + dateEndToFileName + ".csv";
+                String fileName = "\\AllResults_Th" + numberOfThreads.getText() + "_" + fileSizeSelect.getValue() + "MB_" + dateStartToFileName + ".csv";
+                String fileNameAvg = "\\AvgResults_Th" + numberOfThreads.getText() + "_"  + fileSizeSelect.getValue() + "MB_" +dateEndToFileName + ".csv";
 
                 String path = selectedPathForResult.getText();
 
@@ -607,6 +631,7 @@ public class MyPanel extends JPanel {
                 try {
                     diff = Math.abs(sdf.parse(endTestDate).getTime() - sdf.parse(startTestDate).getTime());
                 } catch (Exception e) {
+                    System.out.println("Error with date");
                 }
 
                 try {
@@ -656,7 +681,7 @@ public class MyPanel extends JPanel {
                     }
                     fileWriterAvg.close();
 
-                } catch (Exception e) {
+                } catch (Exception e) { System.out.println("Problem with export csv");
                 }
             }
 
@@ -681,7 +706,7 @@ public class MyPanel extends JPanel {
 
 
     public static void main (String[] args) {
-        frame = new JFrame ("Fail Transfer Tester v1.0");
+        frame = new JFrame ("File Transfer Tester v.1.0");
         frame.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().add (new MyPanel());
         frame.pack();
